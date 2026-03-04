@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía Python — Administración de Empresas</title>
+  <style>
+    :root {
+      --bg:      #f6f8fa;
+      --bg2:     #ffffff;
+      --bg3:     #eaeef2;
+      --border:  #d0d7de;
+      --text:    #24292f;
+      --dim:     #57606a;
+      --accent:  #0969da;
+      --c-var:   #0969da;
+      --c-list:  #1a7f37;
+      --c-dict:  #9a6700;
+      --c-cond:  #cf222e;
+      --c-loop:  #0598bc;
+      --c-func:  #bf3989;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.6; }
+
+    /* Header */
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .back-btn { background: transparent; border: 1px solid var(--border); color: var(--dim); padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: .85rem; transition: all .15s; }
+    .back-btn:hover { color: var(--text); border-color: var(--text); }
+    .py-badge { background: #3776ab; color: white; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-left: auto; }
+
+    /* Layout */
+    .layout { display: grid; grid-template-columns: 230px 1fr; max-width: 1180px; margin: 0 auto; width: 100%; padding: 0 16px; gap: 0; }
+
+    /* Sidebar nav */
+    nav.sidebar { padding: 28px 10px 40px 0; position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto; }
+    .nav-section { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); padding: 16px 8px 5px; }
+    .nav-section:first-child { padding-top: 0; }
+    .nav-link { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: .86rem; color: var(--dim); text-decoration: none; transition: all .12s; border-left: 3px solid transparent; }
+    .nav-link:hover { color: var(--text); background: var(--bg3); }
+    .nav-link.active { font-weight: 600; background: rgba(9,105,218,.07); }
+    .nav-link[data-c="var"]  { }
+    .nav-link[data-c="var"].active  { color: var(--c-var);  border-left-color: var(--c-var);  }
+    .nav-link[data-c="list"].active { color: var(--c-list); border-left-color: var(--c-list); }
+    .nav-link[data-c="dict"].active { color: var(--c-dict); border-left-color: var(--c-dict); }
+    .nav-link[data-c="cond"].active { color: var(--c-cond); border-left-color: var(--c-cond); }
+    .nav-link[data-c="loop"].active { color: var(--c-loop); border-left-color: var(--c-loop); }
+    .nav-link[data-c="func"].active { color: var(--c-func); border-left-color: var(--c-func); }
+
+    /* Content */
+    main.content { padding: 36px 0 80px 40px; border-left: 1px solid var(--border); min-width: 0; }
+
+    /* Sections */
+    .doc-section { margin-bottom: 64px; scroll-margin-top: 80px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+    .section-icon { font-size: 1.8rem; }
+    .section-title { font-size: 1.5rem; font-weight: 700; }
+    .section-badge { font-size: .72rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; letter-spacing: .04em; }
+
+    .sec-var  .section-badge { background: rgba(9,105,218,.12);  color: #0550ae; border: 1px solid rgba(9,105,218,.3); }
+    .sec-list .section-badge { background: rgba(26,127,55,.12);  color: #116329; border: 1px solid rgba(26,127,55,.3); }
+    .sec-dict .section-badge { background: rgba(154,103,0,.15);  color: #7d4e00; border: 1px solid rgba(154,103,0,.3); }
+    .sec-cond .section-badge { background: rgba(207,34,46,.12);  color: #a40e26; border: 1px solid rgba(207,34,46,.3); }
+    .sec-loop .section-badge { background: rgba(5,152,188,.12);  color: #0360a0; border: 1px solid rgba(5,152,188,.3); }
+    .sec-func .section-badge { background: rgba(191,57,137,.12); color: #8a0e5a; border: 1px solid rgba(191,57,137,.3); }
+
+    /* Prose */
+    .prose { font-size: 1rem; line-height: 1.8; color: var(--text); margin-bottom: 18px; }
+    .prose strong { font-weight: 700; }
+
+    /* Code blocks */
+    .code-block { background: #161b22; border-radius: 8px; overflow: hidden; margin: 18px 0; }
+    .code-label { background: #21262d; padding: 7px 16px; font-size: .75rem; color: #8b949e; font-family: system-ui; display: flex; justify-content: space-between; align-items: center; }
+    pre { padding: 16px 20px; font-family: 'Consolas', 'Courier New', monospace; font-size: .92rem; line-height: 1.8; color: #e6edf3; overflow-x: auto; }
+    /* Simple syntax coloring */
+    .kw  { color: #ff7b72; }   /* keywords */
+    .st  { color: #a5d6ff; }   /* strings */
+    .cm  { color: #8b949e; font-style: italic; }  /* comments */
+    .nm  { color: #79c0ff; }   /* numbers */
+    .fn  { color: #d2a8ff; }   /* function names */
+    .bi  { color: #ffa657; }   /* builtins */
+
+    /* Info cards */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 18px 0; }
+    .card { border-radius: 10px; padding: 16px 18px; border: 2px solid; }
+    .card-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .card-body { font-size: .9rem; line-height: 1.6; }
+
+    .card-int   { background: rgba(9,105,218,.06);  border-color: rgba(9,105,218,.25); }
+    .card-int   .card-title { color: #0550ae; }
+    .card-float { background: rgba(130,80,223,.06); border-color: rgba(130,80,223,.25); }
+    .card-float .card-title { color: #6639ba; }
+    .card-str   { background: rgba(26,127,55,.06);  border-color: rgba(26,127,55,.25); }
+    .card-str   .card-title { color: #116329; }
+    .card-bool  { background: rgba(207,34,46,.06);  border-color: rgba(207,34,46,.25); }
+    .card-bool  .card-title { color: #a40e26; }
+
+    /* Reference tables */
+    .ref-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .9rem; }
+    .ref-table th { background: var(--bg3); padding: 9px 14px; text-align: left; font-size: .78rem; font-weight: 700; color: var(--dim); border-bottom: 2px solid var(--border); }
+    .ref-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ref-table tr:last-child td { border-bottom: none; }
+    .ref-table td code { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; font-family: 'Consolas', monospace; font-size: .82rem; }
+
+    /* Tip boxes */
+    .tip { background: rgba(9,105,218,.06); border: 1px solid rgba(9,105,218,.25); border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: .9rem; line-height: 1.65; }
+    .tip strong { color: var(--accent); }
+    .warn { background: rgba(154,103,0,.07); border: 1px solid rgba(154,103,0,.3); border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: .9rem; line-height: 1.65; }
+    .warn strong { color: #9a6700; }
+
+    code { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: .82rem; }
+
+    /* Section divider label */
+    .sub-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--dim); margin: 24px 0 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back-btn">← Volver al Trainer</a>
+  <span style="font-size:1.3rem">🐍</span>
+  <h1>Guía Python — Administración de Empresas</h1>
+  <span class="py-badge">Python 3</span>
+</header>
+
+<div class="layout">
+
+  <!-- Nav sidebar -->
+  <nav class="sidebar">
+    <div class="nav-section">Contenido</div>
+    <a class="nav-link active" href="#variables" data-c="var">📦 Variables y tipos</a>
+    <a class="nav-link" href="#listas"    data-c="list">📋 Listas</a>
+    <a class="nav-link" href="#diccionarios" data-c="dict">🗂️ Diccionarios</a>
+    <a class="nav-link" href="#condicionales" data-c="cond">🔀 Condicionales</a>
+    <a class="nav-link" href="#ciclos"    data-c="loop">🔄 Ciclos (for)</a>
+    <a class="nav-link" href="#funciones" data-c="func">⚙️ Funciones</a>
+    <div class="nav-section">Referencia</div>
+    <a class="nav-link" href="#operadores" data-c="var">➕ Operadores</a>
+    <a class="nav-link" href="#print"      data-c="var">🖨️ print() y f-strings</a>
+  </nav>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- ── VARIABLES ── -->
+    <section class="doc-section sec-var" id="variables">
+      <div class="section-header">
+        <span class="section-icon">📦</span>
+        <span class="section-title">Variables y Tipos de Datos</span>
+        <span class="section-badge">FUNDAMENTOS</span>
+      </div>
+
+      <p class="prose">Una <strong>variable</strong> es como una caja con etiqueta donde guardas información.
+      Le das un nombre, y Python recuerda el valor para usarlo después. No necesitas declarar el tipo — Python lo detecta solo.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Datos de una empresa</span><span>Python 3</span></div>
+        <pre><span class="cm"># Texto (str)</span>
+nombre_empresa = <span class="st">"Tech Store"</span>
+gerente        = <span class="st">"Ana García"</span>
+
+<span class="cm"># Número entero (int)</span>
+empleados      = <span class="nm">42</span>
+año_fundacion  = <span class="nm">2018</span>
+
+<span class="cm"># Número decimal (float)</span>
+ventas_mes     = <span class="nm">85000.50</span>
+tasa_iva       = <span class="nm">0.16</span>
+
+<span class="cm"># Verdadero / Falso (bool)</span>
+activo         = <span class="kw">True</span>
+en_quiebra     = <span class="kw">False</span>
+
+<span class="bi">print</span>(nombre_empresa, <span class="st">"—"</span>, empleados, <span class="st">"empleados"</span>)</pre>
+      </div>
+
+      <div class="sub-label">Tipos de datos básicos</div>
+      <div class="card-grid">
+        <div class="card card-int">
+          <div class="card-title">int — Entero</div>
+          <div class="card-body">Números sin decimales.<br><code>empleados = 42</code><br><code>ventas = 1500</code></div>
+        </div>
+        <div class="card card-float">
+          <div class="card-title">float — Decimal</div>
+          <div class="card-body">Números con punto decimal.<br><code>precio = 99.99</code><br><code>tasa = 0.16</code></div>
+        </div>
+        <div class="card card-str">
+          <div class="card-title">str — Texto</div>
+          <div class="card-body">Texto entre comillas.<br><code>nombre = "Ana"</code><br><code>ciudad = 'CDMX'</code></div>
+        </div>
+        <div class="card card-bool">
+          <div class="card-title">bool — Lógico</div>
+          <div class="card-body">Solo <code>True</code> o <code>False</code>.<br><code>activo = True</code><br><code>pagado = False</code></div>
+        </div>
+      </div>
+
+      <div class="tip"><strong>💡 Tip:</strong> Los nombres de variables no pueden tener espacios ni caracteres especiales. Usa guión bajo: <code>ventas_mes</code>, <code>nombre_empresa</code>.</div>
+    </section>
+
+    <!-- ── LISTAS ── -->
+    <section class="doc-section sec-list" id="listas">
+      <div class="section-header">
+        <span class="section-icon">📋</span>
+        <span class="section-title">Listas</span>
+        <span class="section-badge">COLECCIONES</span>
+      </div>
+
+      <p class="prose">Una <strong>lista</strong> guarda varios valores en orden dentro de corchetes <code>[ ]</code>.
+      Cada elemento tiene una posición (índice) que <strong>empieza en 0</strong>.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Catálogo de productos</span></div>
+        <pre>productos = [<span class="st">"Laptop"</span>, <span class="st">"Mouse"</span>, <span class="st">"Teclado"</span>, <span class="st">"Monitor"</span>]
+precios   = [<span class="nm">15000</span>, <span class="nm">450</span>, <span class="nm">800</span>, <span class="nm">3200</span>]
+
+<span class="cm"># Acceder por posición (empieza en 0)</span>
+<span class="bi">print</span>(productos[<span class="nm">0</span>])   <span class="cm"># "Laptop"</span>
+<span class="bi">print</span>(productos[<span class="nm">-1</span>])  <span class="cm"># "Monitor" (último)</span>
+
+<span class="cm"># Cuántos hay</span>
+<span class="bi">print</span>(<span class="bi">len</span>(productos))  <span class="cm"># 4</span>
+
+<span class="cm"># Agregar un producto nuevo</span>
+productos.<span class="fn">append</span>(<span class="st">"Webcam"</span>)
+
+<span class="cm"># ¿Está en la lista?</span>
+<span class="bi">print</span>(<span class="st">"Mouse"</span> <span class="kw">in</span> productos)  <span class="cm"># True</span></pre>
+      </div>
+
+      <div class="sub-label">Operaciones más usadas</div>
+      <table class="ref-table">
+        <thead><tr><th>Operación</th><th>Código</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td>Acceder</td>    <td><code>lista[0]</code></td>     <td>Obtiene el primer elemento</td></tr>
+          <tr><td>Último</td>     <td><code>lista[-1]</code></td>    <td>Obtiene el último elemento</td></tr>
+          <tr><td>Contar</td>     <td><code>len(lista)</code></td>   <td>Número de elementos</td></tr>
+          <tr><td>Agregar</td>    <td><code>lista.append(x)</code></td> <td>Agrega al final</td></tr>
+          <tr><td>Eliminar</td>   <td><code>lista.remove(x)</code></td> <td>Elimina el valor x</td></tr>
+          <tr><td>Buscar</td>     <td><code>x in lista</code></td>   <td>True si x existe</td></tr>
+          <tr><td>Ordenar</td>    <td><code>lista.sort()</code></td> <td>Ordena la lista</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── DICCIONARIOS ── -->
+    <section class="doc-section sec-dict" id="diccionarios">
+      <div class="section-header">
+        <span class="section-icon">🗂️</span>
+        <span class="section-title">Diccionarios</span>
+        <span class="section-badge">REGISTROS</span>
+      </div>
+
+      <p class="prose">Un <strong>diccionario</strong> guarda pares de <strong>clave: valor</strong> entre llaves <code>{ }</code>.
+      Es ideal para representar un registro, como una ficha de empleado o un producto.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Ficha de empleado</span></div>
+        <pre>empleado = {
+    <span class="st">"nombre"</span>:       <span class="st">"Ana García"</span>,
+    <span class="st">"departamento"</span>: <span class="st">"Ventas"</span>,
+    <span class="st">"salario"</span>:      <span class="nm">18500</span>,
+    <span class="st">"activo"</span>:       <span class="kw">True</span>
+}
+
+<span class="cm"># Acceder a un valor</span>
+<span class="bi">print</span>(empleado[<span class="st">"nombre"</span>])     <span class="cm"># "Ana García"</span>
+<span class="bi">print</span>(empleado[<span class="st">"salario"</span>])    <span class="cm"># 18500</span>
+
+<span class="cm"># Modificar un valor</span>
+empleado[<span class="st">"salario"</span>] = <span class="nm">20000</span>
+
+<span class="cm"># Agregar una clave nueva</span>
+empleado[<span class="st">"correo"</span>] = <span class="st">"ana@empresa.com"</span>
+
+<span class="cm"># Ver todas las claves</span>
+<span class="bi">print</span>(empleado.<span class="fn">keys</span>())</pre>
+      </div>
+
+      <div class="tip"><strong>💡 Diferencia clave:</strong> Las listas usan posiciones numéricas <code>[0]</code>, los diccionarios usan nombres <code>["nombre"]</code>. Los diccionarios son mejores cuando los datos tienen etiquetas.</div>
+
+      <div class="sub-label">Operaciones más usadas</div>
+      <table class="ref-table">
+        <thead><tr><th>Operación</th><th>Código</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td>Acceder</td>   <td><code>d["clave"]</code></td>       <td>Obtiene el valor de esa clave</td></tr>
+          <tr><td>Modificar</td> <td><code>d["clave"] = val</code></td> <td>Cambia o agrega un valor</td></tr>
+          <tr><td>Claves</td>    <td><code>d.keys()</code></td>         <td>Lista de todas las claves</td></tr>
+          <tr><td>Valores</td>   <td><code>d.values()</code></td>       <td>Lista de todos los valores</td></tr>
+          <tr><td>Buscar</td>    <td><code>"k" in d</code></td>         <td>True si la clave existe</td></tr>
+          <tr><td>Eliminar</td>  <td><code>del d["clave"]</code></td>   <td>Elimina esa clave y valor</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── CONDICIONALES ── -->
+    <section class="doc-section sec-cond" id="condicionales">
+      <div class="section-header">
+        <span class="section-icon">🔀</span>
+        <span class="section-title">Condicionales</span>
+        <span class="section-badge">DECISIONES</span>
+      </div>
+
+      <p class="prose">Con <strong>if / elif / else</strong> el programa toma decisiones. Evalúa una condición
+      y ejecuta diferentes bloques de código según si es verdadera (<code>True</code>) o falsa (<code>False</code>).
+      La <strong>indentación</strong> (4 espacios) es obligatoria.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Evaluación de desempeño</span></div>
+        <pre>ventas_mes = <span class="nm">92000</span>
+meta       = <span class="nm">100000</span>
+porcentaje = (ventas_mes / meta) * <span class="nm">100</span>
+
+<span class="kw">if</span> porcentaje >= <span class="nm">100</span>:
+    resultado = <span class="st">"¡Meta superada! 🎉"</span>
+    bono      = <span class="st">"10%"</span>
+<span class="kw">elif</span> porcentaje >= <span class="nm">80</span>:
+    resultado = <span class="st">"Cerca de la meta 👍"</span>
+    bono      = <span class="st">"5%"</span>
+<span class="kw">else</span>:
+    resultado = <span class="st">"Meta no alcanzada 😔"</span>
+    bono      = <span class="st">"0%"</span>
+
+<span class="bi">print</span>(<span class="st">f"Logro: </span>{porcentaje:<span class="nm">.1f</span>}<span class="st">%"</span>)
+<span class="bi">print</span>(<span class="st">f"Estado: </span>{resultado}<span class="st">"</span>)
+<span class="bi">print</span>(<span class="st">f"Bono: </span>{bono}<span class="st">"</span>)</pre>
+      </div>
+
+      <div class="sub-label">Operadores de comparación</div>
+      <table class="ref-table">
+        <thead><tr><th>Operador</th><th>Significado</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>==</code></td><td>Igual a</td>          <td><code>ventas == meta</code></td></tr>
+          <tr><td><code>!=</code></td><td>Diferente de</td>     <td><code>estado != "cerrado"</code></td></tr>
+          <tr><td><code>&gt;</code></td><td>Mayor que</td>      <td><code>precio &gt; 1000</code></td></tr>
+          <tr><td><code>&lt;</code></td><td>Menor que</td>      <td><code>stock &lt; 5</code></td></tr>
+          <tr><td><code>&gt;=</code></td><td>Mayor o igual</td> <td><code>edad &gt;= 18</code></td></tr>
+          <tr><td><code>&lt;=</code></td><td>Menor o igual</td> <td><code>descuento &lt;= 0.5</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="warn"><strong>⚠️ Atención:</strong> Para comparar usa <code>==</code> (dos signos igual). Un solo <code>=</code> es para asignar un valor, no para comparar.</div>
+    </section>
+
+    <!-- ── CICLOS ── -->
+    <section class="doc-section sec-loop" id="ciclos">
+      <div class="section-header">
+        <span class="section-icon">🔄</span>
+        <span class="section-title">Ciclos (for)</span>
+        <span class="section-badge">AUTOMATIZACIÓN</span>
+      </div>
+
+      <p class="prose">El ciclo <strong>for</strong> repite un bloque de código para cada elemento de una lista.
+      Es ideal para procesar múltiples registros sin repetir código.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Reporte de ventas semanal</span></div>
+        <pre>dias   = [<span class="st">"Lun"</span>, <span class="st">"Mar"</span>, <span class="st">"Mié"</span>, <span class="st">"Jue"</span>, <span class="st">"Vie"</span>]
+ventas = [<span class="nm">3200</span>, <span class="nm">4800</span>, <span class="nm">2900</span>, <span class="nm">5100</span>, <span class="nm">4400</span>]
+
+total = <span class="nm">0</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(dias)):
+    total += ventas[i]
+    <span class="bi">print</span>(<span class="st">f"  </span>{dias[i]}<span class="st">: $</span>{ventas[i]:,}<span class="st">"</span>)
+
+promedio = total / <span class="bi">len</span>(dias)
+<span class="bi">print</span>(<span class="st">f"\nTotal:   ${total:,}"</span>)
+<span class="bi">print</span>(<span class="st">f"Promedio: ${promedio:,.0f}"</span>)</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-label"><span>Forma simple — for directo sobre lista</span></div>
+        <pre>productos = [<span class="st">"Laptop"</span>, <span class="st">"Mouse"</span>, <span class="st">"Teclado"</span>]
+
+<span class="kw">for</span> producto <span class="kw">in</span> productos:
+    <span class="bi">print</span>(<span class="st">"  ✔"</span>, producto)</pre>
+      </div>
+
+      <div class="tip"><strong>💡 Cuándo usar cada forma:</strong><br>
+      • <code>for x in lista</code> — cuando solo necesitas el valor<br>
+      • <code>for i in range(len(lista))</code> — cuando necesitas el índice también</div>
+    </section>
+
+    <!-- ── FUNCIONES ── -->
+    <section class="doc-section sec-func" id="funciones">
+      <div class="section-header">
+        <span class="section-icon">⚙️</span>
+        <span class="section-title">Funciones</span>
+        <span class="section-badge">REUTILIZACIÓN</span>
+      </div>
+
+      <p class="prose">Una <strong>función</strong> es un bloque de código con nombre que puedes usar muchas veces.
+      Se define con <code>def</code>, recibe parámetros de entrada y puede devolver un resultado con <code>return</code>.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Ejemplo — Calculadora de precios</span></div>
+        <pre><span class="kw">def</span> <span class="fn">calcular_precio_final</span>(precio_base, descuento=<span class="nm">0</span>):
+    <span class="cm"># Aplicar descuento</span>
+    precio_desc = precio_base * (<span class="nm">1</span> - descuento)
+    <span class="cm"># Calcular IVA (16%)</span>
+    iva   = precio_desc * <span class="nm">0.16</span>
+    total = precio_desc + iva
+    <span class="kw">return</span> <span class="bi">round</span>(total, <span class="nm">2</span>)
+
+<span class="cm"># Llamar la función</span>
+laptop  = <span class="fn">calcular_precio_final</span>(<span class="nm">12000</span>, descuento=<span class="nm">0.10</span>)
+mouse   = <span class="fn">calcular_precio_final</span>(<span class="nm">400</span>)
+
+<span class="bi">print</span>(<span class="st">f"Laptop:  ${laptop:,}"</span>)
+<span class="bi">print</span>(<span class="st">f"Mouse:   ${mouse:,}"</span>)</pre>
+      </div>
+
+      <div class="sub-label">Partes de una función</div>
+      <table class="ref-table">
+        <thead><tr><th>Parte</th><th>Ejemplo</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td>Nombre</td>      <td><code>calcular_precio_final</code></td> <td>Nombre descriptivo con guiones bajos</td></tr>
+          <tr><td>Parámetros</td>  <td><code>precio_base, descuento</code></td><td>Datos que recibe la función</td></tr>
+          <tr><td>Valor por defecto</td><td><code>descuento=0</code></td>      <td>Si no se pasa, usa 0</td></tr>
+          <tr><td>Cuerpo</td>      <td><code>    total = ...</code></td>       <td>El código a ejecutar (indentado)</td></tr>
+          <tr><td>Retorno</td>     <td><code>return total</code></td>          <td>El resultado que devuelve</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── OPERADORES ── -->
+    <section class="doc-section sec-var" id="operadores">
+      <div class="section-header">
+        <span class="section-icon">➕</span>
+        <span class="section-title">Operadores Matemáticos</span>
+        <span class="section-badge">REFERENCIA</span>
+      </div>
+
+      <table class="ref-table">
+        <thead><tr><th>Operador</th><th>Operación</th><th>Ejemplo</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td><code>+</code></td>  <td>Suma</td>             <td><code>1200 + 300</code></td>  <td><code>1500</code></td></tr>
+          <tr><td><code>-</code></td>  <td>Resta</td>            <td><code>1500 - 750</code></td>  <td><code>750</code></td></tr>
+          <tr><td><code>*</code></td>  <td>Multiplicación</td>   <td><code>750 * 45</code></td>    <td><code>33750</code></td></tr>
+          <tr><td><code>/</code></td>  <td>División</td>         <td><code>33750 / 45</code></td>  <td><code>750.0</code></td></tr>
+          <tr><td><code>//</code></td> <td>División entera</td>  <td><code>7 // 2</code></td>       <td><code>3</code></td></tr>
+          <tr><td><code>%</code></td>  <td>Módulo (residuo)</td> <td><code>7 % 2</code></td>        <td><code>1</code></td></tr>
+          <tr><td><code>**</code></td> <td>Potencia</td>         <td><code>2 ** 10</code></td>      <td><code>1024</code></td></tr>
+          <tr><td><code>+=</code></td> <td>Suma y asigna</td>    <td><code>total += 500</code></td> <td>total = total + 500</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── PRINT Y F-STRINGS ── -->
+    <section class="doc-section sec-var" id="print">
+      <div class="section-header">
+        <span class="section-icon">🖨️</span>
+        <span class="section-title">print() y f-strings</span>
+        <span class="section-badge">REFERENCIA</span>
+      </div>
+
+      <p class="prose">La función <code>print()</code> muestra información en pantalla. Las <strong>f-strings</strong>
+      permiten insertar variables dentro de un texto de forma elegante.</p>
+
+      <div class="code-block">
+        <div class="code-label"><span>Formas de usar print()</span></div>
+        <pre>nombre  = <span class="st">"Tech Store"</span>
+ventas  = <span class="nm">85000</span>
+margen  = <span class="nm">37.5</span>
+
+<span class="cm"># Forma simple con comas</span>
+<span class="bi">print</span>(<span class="st">"Empresa:"</span>, nombre)
+
+<span class="cm"># f-string (recomendado) — insertar variable con { }</span>
+<span class="bi">print</span>(<span class="st">f"Empresa: </span>{nombre}<span class="st">"</span>)
+<span class="bi">print</span>(<span class="st">f"Ventas: ${ventas:,}"</span>)       <span class="cm"># :,  → separador de miles</span>
+<span class="bi">print</span>(<span class="st">f"Margen: {margen:.1f}%"</span>)      <span class="cm"># :.1f → 1 decimal</span>
+<span class="bi">print</span>(<span class="st">f"Ventas: ${ventas:,.0f}"</span>)    <span class="cm"># :,.0f → miles sin decimales</span></pre>
+      </div>
+
+      <div class="sub-label">Formatos útiles en f-strings</div>
+      <table class="ref-table">
+        <thead><tr><th>Formato</th><th>Qué hace</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>{x:,}</code></td>    <td>Separador de miles</td>        <td><code>85,000</code></td></tr>
+          <tr><td><code>{x:.2f}</code></td>  <td>2 decimales</td>               <td><code>37.50</code></td></tr>
+          <tr><td><code>{x:.1f}</code></td>  <td>1 decimal</td>                 <td><code>37.5</code></td></tr>
+          <tr><td><code>{x:,.2f}</code></td> <td>Miles con 2 decimales</td>     <td><code>85,000.00</code></td></tr>
+          <tr><td><code>{x:.0f}</code></td>  <td>Sin decimales (redondea)</td>  <td><code>38</code></td></tr>
+          <tr><td><code>{x:.1%}</code></td>  <td>Porcentaje con 1 decimal</td>  <td><code>37.5%</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Highlight active nav link on scroll
+const sections = document.querySelectorAll('.doc-section');
+const navLinks  = document.querySelectorAll('.nav-link');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.id;
+      const link = document.querySelector(`.nav-link[href="#${id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

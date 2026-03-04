@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Trainer — Administración de Empresas</title>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <style>
+    :root {
+      --bg:      #f6f8fa;
+      --bg2:     #ffffff;
+      --bg3:     #eaeef2;
+      --bg-dark: #161b22;
+      --border:  #d0d7de;
+      --text:    #24292f;
+      --dim:     #57606a;
+      --accent:  #0969da;
+      --c-var:   #0969da;
+      --c-list:  #1a7f37;
+      --c-dict:  #9a6700;
+      --c-cond:  #cf222e;
+      --c-loop:  #0598bc;
+      --c-func:  #bf3989;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    header h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+    .hdr-sub { font-size: .8rem; color: var(--dim); margin-left: auto; }
+    .py-badge { background: #3776ab; color: white; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .py-status { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--dim); }
+    .spinner { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .guide-link { background: transparent; border: 1px solid var(--border); color: var(--dim); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: .82rem; text-decoration: none; transition: all .12s; }
+    .guide-link:hover { color: var(--text); border-color: var(--text); }
+
+    /* ── LAYOUT ── */
+    .layout { display: grid; grid-template-columns: 270px 1fr; flex: 1; min-height: 0; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .sec-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--dim); padding: 10px 4px 4px; }
+
+    .topic-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 4px; }
+    .topic-head { padding: 9px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; user-select: none; transition: background .12s; }
+    .topic-head:hover { background: rgba(0,0,0,.04); }
+    .topic-head .arrow { margin-left: auto; font-size: .65rem; color: var(--dim); transition: transform .15s; }
+    .topic-head.open .arrow { transform: rotate(90deg); }
+    .topic-body { display: none; padding: 4px 0; }
+    .topic-body.open { display: block; }
+
+    .topic-var  .topic-head { border-left: 3px solid var(--c-var); }
+    .topic-list .topic-head { border-left: 3px solid var(--c-list); }
+    .topic-dict .topic-head { border-left: 3px solid var(--c-dict); }
+    .topic-cond .topic-head { border-left: 3px solid var(--c-cond); }
+    .topic-loop .topic-head { border-left: 3px solid var(--c-loop); }
+    .topic-func .topic-head { border-left: 3px solid var(--c-func); }
+
+    .ex-btn { width: 100%; text-align: left; background: transparent; border: none; border-left: 3px solid transparent; color: var(--text); padding: 8px 12px 8px 20px; cursor: pointer; font-size: .82rem; line-height: 1.4; transition: all .1s; display: block; }
+    .ex-btn:hover { background: rgba(0,0,0,.04); }
+
+    .topic-var  .ex-btn.active { border-left-color: var(--c-var);  color: var(--c-var);  background: rgba(9,105,218,.07);  }
+    .topic-list .ex-btn.active { border-left-color: var(--c-list); color: var(--c-list); background: rgba(26,127,55,.07);  }
+    .topic-dict .ex-btn.active { border-left-color: var(--c-dict); color: var(--c-dict); background: rgba(154,103,0,.07);  }
+    .topic-cond .ex-btn.active { border-left-color: var(--c-cond); color: var(--c-cond); background: rgba(207,34,46,.07);  }
+    .topic-loop .ex-btn.active { border-left-color: var(--c-loop); color: var(--c-loop); background: rgba(5,152,188,.07);  }
+    .topic-func .ex-btn.active { border-left-color: var(--c-func); color: var(--c-func); background: rgba(191,57,137,.07); }
+
+    /* ── MAIN ── */
+    .main { overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+    .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .panel-header { padding: 11px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 700; color: var(--text); }
+
+    /* Editor */
+    .editor-wrap { background: var(--bg-dark); }
+    textarea#editor { display: block; width: 100%; background: transparent; border: none; color: #e6edf3; font-family: 'Consolas', 'Courier New', monospace; font-size: 1rem; padding: 16px 18px; resize: vertical; min-height: 190px; outline: none; line-height: 1.8; tab-size: 4; }
+    .editor-foot { padding: 10px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .btn-run { background: #238636; color: #fff; border: none; padding: 9px 24px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: .95rem; transition: background .12s; }
+    .btn-run:hover:not(:disabled) { background: #2ea043; }
+    .btn-run:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-sec { background: transparent; color: var(--dim); border: 1px solid var(--border); padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: .88rem; transition: all .12s; }
+    .btn-sec:hover { color: var(--text); border-color: var(--text); }
+    .kbd-hint { margin-left: auto; font-size: .78rem; color: var(--dim); }
+    kbd { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 2px 6px; font-size: .75rem; }
+
+    /* Output / Concept tabs */
+    .tab-nav { display: flex; background: var(--bg3); border-bottom: 1px solid var(--border); }
+    .tab-btn { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--dim); padding: 10px 20px; cursor: pointer; font-size: .82rem; font-weight: 600; transition: all .15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(9,105,218,.04); }
+    .tab-view { display: none; }
+    .tab-view.active { display: block; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Output */
+    #output-area { padding: 16px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: .95rem; min-height: 130px; white-space: pre-wrap; line-height: 1.75; color: var(--text); }
+    #output-area.is-error { background: rgba(207,34,46,.04); }
+    #output-area.empty { color: var(--dim); font-style: italic; font-family: 'Segoe UI', system-ui, sans-serif; font-size: .9rem; }
+    .err-title { color: #cf222e; font-weight: 700; margin-bottom: 6px; }
+    .err-body  { color: #cf222e; font-size: .88rem; }
+
+    /* ── CONCEPT DIAGRAMS ── */
+    .concept-area { padding: 22px 24px; }
+    .concept-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+    .concept-desc { font-size: .9rem; color: var(--dim); margin-bottom: 20px; line-height: 1.65; }
+    .concept-desc strong { color: var(--text); }
+    .concept-placeholder { color: var(--dim); font-style: italic; font-size: .9rem; padding: 40px 0; text-align: center; }
+    code { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: .82rem; }
+
+    /* Variables */
+    .var-diagram { display: flex; flex-direction: column; gap: 12px; }
+    .var-box { display: flex; align-items: stretch; max-width: 460px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .var-name { background: #ddf4ff; border: 2px solid #54aeff; color: #0550ae; padding: 10px 16px; font-family: monospace; font-weight: 700; font-size: .9rem; min-width: 160px; display: flex; align-items: center; }
+    .var-eq { background: #c4d2e8; color: #0550ae; padding: 0 10px; display: flex; align-items: center; font-weight: 700; font-size: 1rem; }
+    .var-value { background: #fff8c5; border: 2px solid #d4a72c; border-left: none; color: #633c01; padding: 10px 16px; font-family: monospace; font-weight: 700; font-size: .9rem; flex: 1; display: flex; align-items: center; gap: 8px; }
+    .var-type { font-size: .65rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
+    .type-int   { background: rgba(9,105,218,.12); color: #0550ae; }
+    .type-float { background: rgba(130,80,223,.12); color: #6639ba; }
+    .type-str   { background: rgba(26,127,55,.12);  color: #116329; }
+    .type-bool  { background: rgba(207,34,46,.12);  color: #a40e26; }
+
+    /* Lists */
+    .list-label { font-family: monospace; font-size: .95rem; font-weight: 700; color: var(--c-list); margin-bottom: 14px; }
+    .list-boxes { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 28px; }
+    .list-cell { border: 2px solid #2da44e; background: #dafbe1; padding: 12px 18px; text-align: center; min-width: 80px; position: relative; }
+    .list-cell:first-child { border-radius: 8px 0 0 8px; }
+    .list-cell:last-child  { border-radius: 0 8px 8px 0; }
+    .list-cell + .list-cell { border-left: none; }
+    .list-cell-val { font-family: monospace; font-weight: 700; font-size: .88rem; color: #116329; }
+    .list-cell-idx { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: .7rem; color: var(--dim); font-family: monospace; white-space: nowrap; }
+    .list-hint { font-size: .82rem; color: var(--dim); margin-top: 4px; }
+
+    /* Dicts */
+    .dict-table { border-collapse: collapse; width: 100%; max-width: 380px; border-radius: 8px; overflow: hidden; border: 2px solid #d4a72c; }
+    .dict-table th { background: #9a6700; color: white; padding: 8px 14px; font-size: .78rem; text-align: left; }
+    .dict-table td { padding: 10px 14px; font-family: monospace; font-size: .88rem; border-top: 1px solid #fae17d; }
+    .dict-table tr:nth-child(even) td { background: #fff8c5; }
+    .dict-table tr:nth-child(odd)  td { background: #fffde7; }
+    .dict-key { color: #9a6700; font-weight: 700; }
+    .dict-hint { font-size: .82rem; color: var(--dim); margin-top: 10px; }
+
+    /* Conditionals */
+    .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .flow-rect { background: #ddf4ff; border: 2px solid #54aeff; color: #0550ae; padding: 10px 28px; border-radius: 6px; font-family: monospace; font-weight: 600; font-size: .88rem; text-align: center; }
+    .flow-arrow { font-size: 1.3rem; color: var(--dim); line-height: 1.4; }
+    .flow-diamond-outer { width: 150px; height: 75px; position: relative; margin: 8px 0; }
+    .flow-diamond-inner { position: absolute; inset: 0; background: #fff1e0; border: 2px solid #fb8f44; transform: rotate(45deg) scale(.75); border-radius: 4px; }
+    .flow-diamond-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: .72rem; font-weight: 700; color: #953800; text-align: center; padding: 4px; }
+    .flow-branches { display: flex; gap: 48px; margin-top: 12px; }
+    .flow-branch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .flow-branch-lbl { font-size: .7rem; font-weight: 700; color: var(--dim); }
+    .flow-yes { background: #dafbe1; border: 2px solid #2da44e; color: #116329; padding: 8px 14px; border-radius: 6px; font-size: .82rem; text-align: center; font-weight: 600; max-width: 130px; }
+    .flow-no  { background: #ffebe9; border: 2px solid #ff8182; color: #a40e26; padding: 8px 14px; border-radius: 6px; font-size: .82rem; text-align: center; font-weight: 600; max-width: 130px; }
+
+    /* Loop */
+    .loop-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .loop-item { padding: 9px 14px; border: 2px solid var(--border); border-radius: 6px; font-family: monospace; font-size: .85rem; background: var(--bg2); transition: all .3s; }
+    .loop-item.active { background: #ddf4ff; border-color: #54aeff; color: #0550ae; font-weight: 700; transform: translateY(-4px); box-shadow: 0 6px 16px rgba(9,105,218,.2); }
+    .loop-item.done { background: #dafbe1; border-color: #2da44e; color: #116329; opacity: .6; }
+    .loop-status { font-size: .85rem; color: var(--dim); font-family: monospace; margin: 6px 0; min-height: 24px; }
+    .btn-anim { background: var(--c-loop); color: white; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: .82rem; font-weight: 600; margin-top: 4px; }
+
+    /* Functions */
+    .func-box { background: #ffeef8; border: 2px solid #d63384; border-radius: 10px; padding: 16px 20px; max-width: 400px; }
+    .func-name { font-family: monospace; font-weight: 700; color: #bf3989; font-size: .95rem; margin-bottom: 12px; }
+    .func-io { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .func-params { display: flex; flex-direction: column; gap: 6px; }
+    .func-input  { background: #ddf4ff; border: 1px solid #54aeff; color: #0550ae; padding: 5px 12px; border-radius: 6px; font-family: monospace; font-size: .82rem; }
+    .func-output { background: #dafbe1; border: 1px solid #2da44e; color: #116329; padding: 5px 12px; border-radius: 6px; font-family: monospace; font-size: .82rem; }
+    .func-arrow  { font-size: 1.4rem; color: var(--dim); }
+    .func-hint   { font-size: .82rem; color: var(--dim); margin-top: 10px; }
+
+    /* Pyodide loading overlay */
+    #py-loading { position: fixed; inset: 0; background: rgba(246,248,250,.92); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 999; }
+    #py-loading h2 { font-size: 1.2rem; }
+    #py-loading p  { font-size: .88rem; color: var(--dim); }
+    .big-spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: #3776ab; border-radius: 50%; animation: spin .8s linear infinite; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="py-loading">
+  <span style="font-size:3rem">🐍</span>
+  <div class="big-spinner"></div>
+  <h2>Cargando Python en el navegador...</h2>
+  <p>Esto tarda unos segundos la primera vez.</p>
+</div>
+
+<!-- Header -->
+<header>
+  <span style="font-size:1.4rem">🐍</span>
+  <h1>Python Trainer</h1>
+  <span class="py-badge">Python 3</span>
+  <div id="py-status" class="py-status">
+    <div class="spinner"></div>
+    <span>Iniciando...</span>
+  </div>
+  <a href="guia.html" class="guide-link" style="margin-left:12px">📖 Guía de referencia</a>
+  <span class="hdr-sub">Administración de Empresas</span>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sec-label">Temas</div>
+
+    <!-- Variables -->
+    <div class="topic-card topic-var" id="grp-var">
+      <div class="topic-head open" id="head-var" onclick="toggleTopic('var')">
+        <span>📦</span> Variables <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body open" id="body-var">
+        <button class="ex-btn" id="btn-var1" onclick="loadExample('var1',this)">Guardar información</button>
+        <button class="ex-btn" id="btn-var2" onclick="loadExample('var2',this)">Cálculos de negocio</button>
+      </div>
+    </div>
+
+    <!-- Listas -->
+    <div class="topic-card topic-list" id="grp-list">
+      <div class="topic-head" id="head-list" onclick="toggleTopic('list')">
+        <span>📋</span> Listas <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body" id="body-list">
+        <button class="ex-btn" id="btn-list1" onclick="loadExample('list1',this)">Lista de productos</button>
+        <button class="ex-btn" id="btn-list2" onclick="loadExample('list2',this)">Operar con listas</button>
+      </div>
+    </div>
+
+    <!-- Diccionarios -->
+    <div class="topic-card topic-dict" id="grp-dict">
+      <div class="topic-head" id="head-dict" onclick="toggleTopic('dict')">
+        <span>🗂️</span> Diccionarios <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body" id="body-dict">
+        <button class="ex-btn" id="btn-dict1" onclick="loadExample('dict1',this)">Ficha de empleado</button>
+        <button class="ex-btn" id="btn-dict2" onclick="loadExample('dict2',this)">Registro de producto</button>
+      </div>
+    </div>
+
+    <!-- Condicionales -->
+    <div class="topic-card topic-cond" id="grp-cond">
+      <div class="topic-head" id="head-cond" onclick="toggleTopic('cond')">
+        <span>🔀</span> Condicionales <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body" id="body-cond">
+        <button class="ex-btn" id="btn-cond1" onclick="loadExample('cond1',this)">Meta de ventas</button>
+        <button class="ex-btn" id="btn-cond2" onclick="loadExample('cond2',this)">Clasificar cliente</button>
+      </div>
+    </div>
+
+    <!-- Ciclos -->
+    <div class="topic-card topic-loop" id="grp-loop">
+      <div class="topic-head" id="head-loop" onclick="toggleTopic('loop')">
+        <span>🔄</span> Ciclos (for) <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body" id="body-loop">
+        <button class="ex-btn" id="btn-loop1" onclick="loadExample('loop1',this)">Recorrer productos</button>
+        <button class="ex-btn" id="btn-loop2" onclick="loadExample('loop2',this)">Calcular total</button>
+      </div>
+    </div>
+
+    <!-- Funciones -->
+    <div class="topic-card topic-func" id="grp-func">
+      <div class="topic-head" id="head-func" onclick="toggleTopic('func')">
+        <span>⚙️</span> Funciones <span class="arrow">▶</span>
+      </div>
+      <div class="topic-body" id="body-func">
+        <button class="ex-btn" id="btn-func1" onclick="loadExample('func1',this)">Calcular precio final</button>
+        <button class="ex-btn" id="btn-func2" onclick="loadExample('func2',this)">Resumen de empleado</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Editor -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📝</span> Editor de Python
+        <span id="topic-label" style="font-size:.75rem;font-weight:400;color:var(--dim);margin-left:6px"></span>
+      </div>
+      <div class="editor-wrap">
+        <textarea id="editor" spellcheck="false" placeholder="# Escribe tu código Python aquí...&#10;print('¡Hola, mundo!')"></textarea>
+      </div>
+      <div class="editor-foot">
+        <button class="btn-run" id="run-btn" onclick="runCode()" disabled>▶ Ejecutar</button>
+        <button class="btn-sec" onclick="clearEditor()">Limpiar</button>
+        <span class="kbd-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para ejecutar</span>
+      </div>
+    </div>
+
+    <!-- Output + Concept -->
+    <div class="panel">
+      <div class="tab-nav">
+        <button class="tab-btn active" id="tbtn-resultado" onclick="switchTab('resultado')">📊 Resultado</button>
+        <button class="tab-btn"        id="tbtn-concepto"  onclick="switchTab('concepto')">💡 Concepto Visual</button>
+      </div>
+
+      <div class="tab-view active" id="tab-resultado">
+        <div id="output-area" class="empty">Presiona ▶ Ejecutar para ver el resultado aquí.</div>
+      </div>
+
+      <div class="tab-view" id="tab-concepto">
+        <div class="concept-area" id="concept-content">
+          <div class="concept-placeholder">👆 Selecciona un ejemplo del menú izquierdo para ver la explicación visual.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// EXAMPLES
+// ============================================================
+const EXAMPLES = {
+
+  var1: {
+    topic: 'var', label: '📦 Variables',
+    code:
+`# Las variables son "cajas con etiqueta" que guardan información
+nombre_empresa = "Tech Store"
+ventas_mes     = 85000
+tasa_impuesto  = 0.16
+negocio_activo = True
+
+print("Empresa:", nombre_empresa)
+print("Ventas del mes: $", ventas_mes)
+print("Tasa de impuesto:", tasa_impuesto * 100, "%")
+print("¿Negocio activo?", negocio_activo)
+`,
+    concept: () => renderVarConcept([
+      { name: 'nombre_empresa', value: '"Tech Store"', type: 'str'   },
+      { name: 'ventas_mes',     value: '85000',        type: 'int'   },
+      { name: 'tasa_impuesto',  value: '0.16',         type: 'float' },
+      { name: 'negocio_activo', value: 'True',         type: 'bool'  },
+    ])
+  },
+
+  var2: {
+    topic: 'var', label: '📦 Variables — Cálculos',
+    code:
+`# Python como calculadora de negocios
+precio_venta   = 1200
+costo_unitario = 750
+unidades       = 45
+
+ganancia_unit  = precio_venta - costo_unitario
+ganancia_total = ganancia_unit * unidades
+margen         = (ganancia_unit / precio_venta) * 100
+
+print(f"Ganancia por unidad: \${ganancia_unit}")
+print(f"Ganancia total:      \${ganancia_total:,}")
+print(f"Margen de utilidad:  {margen:.1f}%")
+`,
+    concept: () => renderVarConcept([
+      { name: 'precio_venta',   value: '1200',  type: 'int'   },
+      { name: 'costo_unitario', value: '750',   type: 'int'   },
+      { name: 'ganancia_unit',  value: '450',   type: 'int'   },
+      { name: 'margen',         value: '37.5',  type: 'float' },
+    ])
+  },
+
+  list1: {
+    topic: 'list', label: '📋 Listas',
+    code:
+`# Una lista guarda varios valores en orden
+productos = ["Laptop", "Mouse", "Teclado", "Monitor"]
+
+print("Catálogo completo:", productos)
+print()
+print("Primer producto:", productos[0])
+print("Último producto:", productos[-1])
+print("Total de productos:", len(productos))
+`,
+    concept: () => renderListConcept('productos', ['Laptop', 'Mouse', 'Teclado', 'Monitor'])
+  },
+
+  list2: {
+    topic: 'list', label: '📋 Listas — Operaciones',
+    code:
+`# Agregar, consultar y recorrer listas
+clientes = ["Empresa A", "Empresa B", "Empresa C"]
+
+# Agregar nuevo cliente
+clientes.append("Empresa D")
+print("Clientes:", clientes)
+
+# ¿Está en la lista?
+print("¿Existe Empresa B?", "Empresa B" in clientes)
+
+# Total de clientes
+print("Total clientes:", len(clientes))
+
+# Primer y último
+print("Primero:", clientes[0])
+print("Último:",  clientes[-1])
+`,
+    concept: () => renderListConcept('clientes', ['Empresa A', 'Empresa B', 'Empresa C', 'Empresa D'])
+  },
+
+  dict1: {
+    topic: 'dict', label: '🗂️ Diccionarios',
+    code:
+`# Un diccionario guarda pares clave: valor
+empleado = {
+    "nombre":       "Ana García",
+    "departamento": "Ventas",
+    "salario":      18500,
+    "activo":       True
+}
+
+print("Nombre:",       empleado["nombre"])
+print("Departamento:", empleado["departamento"])
+print(f"Salario: \${empleado['salario']:,}")
+print("¿Activo?",      empleado["activo"])
+`,
+    concept: () => renderDictConcept('empleado', [
+      { key: 'nombre',       val: '"Ana García"' },
+      { key: 'departamento', val: '"Ventas"'      },
+      { key: 'salario',      val: '18500'         },
+      { key: 'activo',       val: 'True'          },
+    ])
+  },
+
+  dict2: {
+    topic: 'dict', label: '🗂️ Diccionarios — Producto',
+    code:
+`# Registro completo de un producto
+producto = {
+    "nombre":     "Laptop Pro",
+    "categoria":  "Electrónica",
+    "precio":     15000,
+    "stock":      24,
+    "disponible": True
+}
+
+# Modificar un valor
+producto["stock"] = 23
+
+print("Nombre:    ", producto["nombre"])
+print("Categoría: ", producto["categoria"])
+print(f"Precio:    \${producto['precio']:,}")
+print("Stock:      ", producto["stock"])
+print("Disponible:", producto["disponible"])
+`,
+    concept: () => renderDictConcept('producto', [
+      { key: 'nombre',     val: '"Laptop Pro"'  },
+      { key: 'categoria',  val: '"Electrónica"' },
+      { key: 'precio',     val: '15000'         },
+      { key: 'stock',      val: '24'            },
+      { key: 'disponible', val: 'True'          },
+    ])
+  },
+
+  cond1: {
+    topic: 'cond', label: '🔀 Condicionales',
+    code:
+`# if / elif / else: el programa toma decisiones
+ventas_mes = 92000
+meta       = 100000
+
+porcentaje = (ventas_mes / meta) * 100
+
+if porcentaje >= 100:
+    resultado = "¡Meta superada! 🎉"
+    bono      = "10%"
+elif porcentaje >= 80:
+    resultado = "Cerca de la meta 👍"
+    bono      = "5%"
+else:
+    resultado = "Meta no alcanzada 😔"
+    bono      = "0%"
+
+print(f"Logro:    {porcentaje:.1f}%")
+print(f"Estado:   {resultado}")
+print(f"Bono:     {bono}")
+`,
+    concept: () => renderCondConcept('ventas >= meta?', '¡Meta superada!\nBono 10%', 'Bono 5%\no sin bono')
+  },
+
+  cond2: {
+    topic: 'cond', label: '🔀 Condicionales — Clientes',
+    code:
+`# Clasificar un cliente por compras anuales
+compras_anuales = 75000
+
+if compras_anuales >= 100000:
+    categoria = "VIP"
+    descuento = "15%"
+elif compras_anuales >= 50000:
+    categoria = "Premium"
+    descuento = "10%"
+elif compras_anuales >= 20000:
+    categoria = "Regular"
+    descuento = "5%"
+else:
+    categoria = "Nuevo"
+    descuento = "0%"
+
+print(f"Compras anuales: \${compras_anuales:,}")
+print(f"Categoría:       {categoria}")
+print(f"Descuento:       {descuento}")
+`,
+    concept: () => renderCondConcept('compras >= 100K?', 'VIP\n15% descuento', 'Premium / Regular\n/ Nuevo')
+  },
+
+  loop1: {
+    topic: 'loop', label: '🔄 Ciclos (for)',
+    code:
+`# El ciclo for recorre cada elemento de la lista
+productos = ["Laptop", "Mouse", "Teclado", "Monitor"]
+
+print("=== Inventario ===")
+for producto in productos:
+    print("  ✔", producto)
+
+print(f"\nTotal: {len(productos)} productos")
+`,
+    concept: () => renderLoopConcept(['Laptop', 'Mouse', 'Teclado', 'Monitor'])
+  },
+
+  loop2: {
+    topic: 'loop', label: '🔄 Ciclos — Totales',
+    code:
+`# Calcular el total de ventas de la semana
+dias   = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+ventas = [3200, 4800, 2900, 5100, 4400, 3700, 6200]
+
+total = 0
+for i in range(len(dias)):
+    total += ventas[i]
+    print(f"  {dias[i]}: \${ventas[i]:,}")
+
+promedio = total / len(dias)
+print(f"\nTotal semana:  \${total:,}")
+print(f"Promedio día:  \${promedio:,.0f}")
+`,
+    concept: () => renderLoopConcept(['3,200', '4,800', '2,900', '5,100', '4,400'])
+  },
+
+  func1: {
+    topic: 'func', label: '⚙️ Funciones',
+    code:
+`# Una función es código reutilizable con nombre propio
+def calcular_precio_final(precio_base, descuento=0):
+    precio_desc = precio_base * (1 - descuento)
+    iva         = precio_desc * 0.16
+    total       = precio_desc + iva
+    return round(total, 2)
+
+# Usamos la función con distintos productos
+laptop  = calcular_precio_final(12000, descuento=0.10)
+mouse   = calcular_precio_final(400)
+teclado = calcular_precio_final(700, descuento=0.05)
+
+print(f"Laptop  (10% desc. + IVA): \${laptop:,}")
+print(f"Mouse   (sin desc. + IVA): \${mouse:,}")
+print(f"Teclado ( 5% desc. + IVA): \${teclado:,}")
+`,
+    concept: () => renderFuncConcept('calcular_precio_final', ['precio_base', 'descuento'], 'total con IVA')
+  },
+
+  func2: {
+    topic: 'func', label: '⚙️ Funciones — Empleado',
+    code:
+`# Función para generar resumen de empleado
+def resumen_empleado(nombre, salario_mensual, meses=12):
+    salario_anual = salario_mensual * meses
+    impuesto      = salario_anual * 0.10
+    neto_anual    = salario_anual - impuesto
+    return {
+        "nombre":        nombre,
+        "salario_anual": salario_anual,
+        "impuesto":      impuesto,
+        "neto_anual":    neto_anual
+    }
+
+emp = resumen_empleado("Ana García", 18500)
+print(f"Empleado:      {emp['nombre']}")
+print(f"Salario anual: \${emp['salario_anual']:,}")
+print(f"Impuesto (10%):\${emp['impuesto']:,}")
+print(f"Neto anual:    \${emp['neto_anual']:,}")
+`,
+    concept: () => renderFuncConcept('resumen_empleado', ['nombre', 'salario_mensual', 'meses'], 'diccionario con resumen')
+  },
+};
+
+// ============================================================
+// CONCEPT RENDERERS
+// ============================================================
+function renderVarConcept(vars) {
+  const tc = { int:'type-int', float:'type-float', str:'type-str', bool:'type-bool' };
+  const rows = vars.map(v => `
+    <div class="var-box">
+      <div class="var-name">${v.name}</div>
+      <div class="var-eq">=</div>
+      <div class="var-value">${v.value}<span class="var-type ${tc[v.type]||''}">${v.type}</span></div>
+    </div>`).join('');
+  return `
+    <div class="concept-title" style="color:var(--c-var)">📦 Variables</div>
+    <div class="concept-desc">Una variable es una <strong>caja con etiqueta</strong> que guarda un valor en memoria.
+    El nombre va a la izquierda y el valor a la derecha del signo <code>=</code>.</div>
+    <div class="var-diagram">${rows}</div>`;
+}
+
+function renderListConcept(name, items) {
+  const cells = items.map((v,i) => `
+    <div class="list-cell">
+      <div class="list-cell-val">${v}</div>
+      <div class="list-cell-idx">[${i}]</div>
+    </div>`).join('');
+  return `
+    <div class="concept-title" style="color:var(--c-list)">📋 Listas</div>
+    <div class="concept-desc">Una lista guarda <strong>varios valores en orden</strong>.
+    Cada casilla tiene un número de posición (índice) que empieza en <code>0</code>.</div>
+    <div class="list-label">${name} = [ ... ]</div>
+    <div class="list-boxes" style="margin-bottom:30px">${cells}</div>
+    <div class="list-hint">↑ Primer elemento: <code>[0]</code> &nbsp;|&nbsp; Último: <code>[-1]</code> &nbsp;|&nbsp; Total: <code>len(${name})</code></div>`;
+}
+
+function renderDictConcept(name, pairs) {
+  const rows = pairs.map(p => `
+    <tr><td class="dict-key">"${p.key}"</td><td class="dict-val">${p.val}</td></tr>`).join('');
+  return `
+    <div class="concept-title" style="color:var(--c-dict)">🗂️ Diccionarios</div>
+    <div class="concept-desc">Un diccionario guarda pares <strong>clave → valor</strong>.
+    Es como una ficha o registro donde cada campo tiene nombre y dato.</div>
+    <table class="dict-table">
+      <thead><tr><th>🔑 Clave</th><th>📄 Valor</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="dict-hint">Acceso: <code>${name}["clave"]</code></div>`;
+}
+
+function renderCondConcept(cond, yes, no) {
+  const yesLines = yes.split('\n').join('<br>');
+  const noLines  = no.split('\n').join('<br>');
+  return `
+    <div class="concept-title" style="color:var(--c-cond)">🔀 Condicionales</div>
+    <div class="concept-desc">Con <strong>if / elif / else</strong> el programa toma decisiones.
+    Dependiendo de si la condición es verdadera o falsa, ejecuta un camino diferente.</div>
+    <div class="flow">
+      <div class="flow-rect">Inicio</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-diamond-outer">
+        <div class="flow-diamond-inner"></div>
+        <div class="flow-diamond-text">${cond}</div>
+      </div>
+      <div class="flow-branches">
+        <div class="flow-branch">
+          <div class="flow-branch-lbl">✅ True (Sí)</div>
+          <div class="flow-yes">${yesLines}</div>
+        </div>
+        <div class="flow-branch">
+          <div class="flow-branch-lbl">❌ False (No)</div>
+          <div class="flow-no">${noLines}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+let loopTimer = null;
+
+function renderLoopConcept(items) {
+  const cells = items.map((v,i) =>
+    `<div class="loop-item" id="lp-${i}">${v}</div>`).join('');
+  return `
+    <div class="concept-title" style="color:var(--c-loop)">🔄 Ciclos (for)</div>
+    <div class="concept-desc">El ciclo <strong>for</strong> recorre cada elemento de una lista uno por uno,
+    ejecutando el mismo bloque de código para cada uno.</div>
+    <div class="loop-row">${cells}</div>
+    <div class="loop-status" id="lp-status">Presiona ▶ para ver la animación</div>
+    <button class="btn-anim" onclick="animateLoop(${items.length})">▶ Animar ciclo</button>`;
+}
+
+function animateLoop(n) {
+  if (loopTimer) clearInterval(loopTimer);
+  for (let i = 0; i < n; i++) {
+    const el = document.getElementById('lp-' + i);
+    if (el) { el.classList.remove('active','done'); }
+  }
+  let cur = 0;
+  loopTimer = setInterval(() => {
+    if (cur > 0) {
+      const prev = document.getElementById('lp-' + (cur-1));
+      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+    }
+    if (cur >= n) {
+      clearInterval(loopTimer);
+      const st = document.getElementById('lp-status');
+      if (st) st.textContent = `✅ Ciclo completado — ${n} iteraciones procesadas`;
+      return;
+    }
+    const el = document.getElementById('lp-' + cur);
+    if (el) el.classList.add('active');
+    const st = document.getElementById('lp-status');
+    if (st) st.textContent = `→ Iteración ${cur+1} de ${n}: procesando "${el ? el.textContent : ''}"`;
+    cur++;
+  }, 700);
+}
+
+function renderFuncConcept(name, params, output) {
+  const chips = params.map(p => `<div class="func-input">📥 ${p}</div>`).join('');
+  return `
+    <div class="concept-title" style="color:var(--c-func)">⚙️ Funciones</div>
+    <div class="concept-desc">Una función es un <strong>bloque de código reutilizable</strong> con nombre propio.
+    Recibe datos de entrada (parámetros), los procesa, y devuelve un resultado.</div>
+    <div class="func-box">
+      <div class="func-name">def ${name}( )</div>
+      <div class="func-io">
+        <div class="func-params">${chips}</div>
+        <div class="func-arrow">→</div>
+        <div class="func-output">📤 ${output}</div>
+      </div>
+    </div>
+    <div class="func-hint">Llamar: <code>${name}(valor1, valor2)</code></div>`;
+}
+
+// ============================================================
+// PYODIDE
+// ============================================================
+let pyodide = null;
+
+async function initPyodide() {
+  try {
+    pyodide = await loadPyodide();
+    document.getElementById('py-loading').style.display = 'none';
+    document.getElementById('py-status').innerHTML =
+      '<span style="color:#2da44e;font-weight:700;font-size:.85rem">● Python listo</span>';
+    document.getElementById('run-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('py-loading').innerHTML =
+      '<h2>Error al cargar Python</h2><p>Verifica tu conexión a internet y recarga la página.</p>';
+  }
+}
+
+// ============================================================
+// CODE EXECUTION
+// ============================================================
+async function runCode() {
+  if (!pyodide) return;
+  const code = document.getElementById('editor').value;
+  if (!code.trim()) return;
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Ejecutando...';
+
+  const out = document.getElementById('output-area');
+  out.className = '';
+  out.innerHTML = '';
+
+  try {
+    pyodide.runPython(`import sys, io\n_buf = io.StringIO()\nsys.stdout = _buf`);
+    await pyodide.runPythonAsync(code);
+    const result = pyodide.runPython('_buf.getvalue()');
+    pyodide.runPython('sys.stdout = sys.__stdout__');
+
+    if (result.trim()) {
+      out.textContent = result;
+    } else {
+      out.className = 'empty';
+      out.textContent = '(El código se ejecutó sin imprimir nada. Usa print() para ver resultados.)';
+    }
+    switchTab('resultado');
+  } catch(e) {
+    try { pyodide.runPython('sys.stdout = sys.__stdout__'); } catch(_) {}
+    out.className = 'is-error';
+    // Show friendly error
+    const msg = String(e.message || e);
+    const lines = msg.split('\n').filter(l => l.trim());
+    const last  = lines[lines.length - 1] || msg;
+    out.innerHTML =
+      `<div class="err-title">❌ Error en el código</div>` +
+      `<div class="err-body">${escHtml(last)}\n\n${escHtml(msg)}</div>`;
+    switchTab('resultado');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Ejecutar';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// UI
+// ============================================================
+function loadExample(key, btn) {
+  const ex = EXAMPLES[key];
+  if (!ex) return;
+
+  if (loopTimer) { clearInterval(loopTimer); loopTimer = null; }
+
+  document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.getElementById('editor').value = ex.code;
+  document.getElementById('topic-label').textContent = ex.label;
+
+  // Open sidebar group
+  const head = document.getElementById('head-' + ex.topic);
+  const body = document.getElementById('body-' + ex.topic);
+  if (head && !head.classList.contains('open')) {
+    head.classList.add('open');
+    body.classList.add('open');
+  }
+
+  // Render concept
+  document.getElementById('concept-content').innerHTML = ex.concept();
+
+  // Reset output
+  const out = document.getElementById('output-area');
+  out.className = 'empty';
+  out.textContent = 'Presiona ▶ Ejecutar para ver el resultado.';
+}
+
+function toggleTopic(key) {
+  document.getElementById('head-' + key).classList.toggle('open');
+  document.getElementById('body-' + key).classList.toggle('open');
+}
+
+function switchTab(tab) {
+  ['resultado','concepto'].forEach(t => {
+    document.getElementById('tbtn-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-'  + t).classList.toggle('active', t === tab);
+  });
+}
+
+function clearEditor() {
+  document.getElementById('editor').value = '';
+  document.getElementById('editor').focus();
+}
+
+// Ctrl/Cmd+Enter
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+  }
+});
+
+// Tab key inserts spaces in editor
+document.getElementById('editor').addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target, s = ta.selectionStart, end = ta.selectionEnd;
+    ta.value = ta.value.substring(0, s) + '    ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = s + 4;
+  }
+});
+
+// Init
+initPyodide();
+// Auto-load first example
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const firstBtn = document.getElementById('btn-var1');
+    if (firstBtn) firstBtn.click();
+  }, 80);
+});
+</script>
+</body>
+</html>

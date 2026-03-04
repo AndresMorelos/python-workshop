@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Node / Slidev
+node_modules/
+dist/
+.slidev/
+*.local
+
+# macOS
+.DS_Store
